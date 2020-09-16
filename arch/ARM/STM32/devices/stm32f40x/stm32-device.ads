@@ -59,6 +59,7 @@ with STM32.I2C.DMA;  use STM32.I2C.DMA;
 with STM32.RTC;      use STM32.RTC;
 with STM32.CRC;      use STM32.CRC;
 with STM32.SDMMC;    use STM32.SDMMC;
+with STM32.CAN;      use STM32.CAN;
 
 package STM32.Device is
    pragma Elaborate_Body;
@@ -327,6 +328,13 @@ package STM32.Device is
    procedure Enable_Clock (This : aliased in out USART);
 
    procedure Reset (This : aliased in out USART);
+
+   CAN_1 : aliased CAN_Controller with Import, Volatile, Address => CAN1_Base;
+   CAN_2 : aliased CAN_Controller with Import, Volatile, Address => CAN2_Base;
+
+   procedure Enable_Clock (This : aliased in out CAN_Controller);
+
+   procedure Reset (This : aliased in out CAN_Controller);
 
    DMA_1 : aliased DMA_Controller with Import, Volatile, Address => DMA1_Base;
    DMA_2 : aliased DMA_Controller with Import, Volatile, Address => DMA2_Base;

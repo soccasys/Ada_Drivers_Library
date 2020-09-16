@@ -296,6 +296,38 @@ package body STM32.Device is
    -- Enable_Clock --
    ------------------
 
+   procedure Enable_Clock (This : aliased in out CAN_Controller) is
+   begin
+      if This'Address = STM32_SVD.CAN1_Base then
+         RCC_Periph.APB1ENR.CAN1EN := True;
+      elsif This'Address = STM32_SVD.CAN2_Base then
+         RCC_Periph.APB1ENR.CAN2EN := True;
+      else
+         raise Unknown_Device;
+      end if;
+   end Enable_Clock;
+
+   -----------
+   -- Reset --
+   -----------
+
+   procedure Reset (This : aliased in out CAN_Controller) is
+   begin
+      if This'Address = STM32_SVD.CAN1_Base then
+         RCC_Periph.APB1RSTR.CAN1RST := True;
+         RCC_Periph.APB1RSTR.CAN1RST := False;
+      elsif This'Address = STM32_SVD.CAN2_Base then
+         RCC_Periph.APB1RSTR.CAN2RST := True;
+         RCC_Periph.APB1RSTR.CAN2RST := False;
+      else
+         raise Unknown_Device;
+      end if;
+   end Reset;
+
+   ------------------
+   -- Enable_Clock --
+   ------------------
+
    procedure Enable_Clock (This : aliased in out DMA_Controller) is
    begin
       if This'Address = STM32_SVD.DMA1_Base then
