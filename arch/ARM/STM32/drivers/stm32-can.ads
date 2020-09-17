@@ -28,20 +28,12 @@
 --   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.   --
 --                                                                          --
 --                                                                          --
---  This file is based on:                                                  --
---                                                                          --
---   @file    stm32f4xx_hal_dac.h and stm32f4xx_hal_dac_ex.h                --
---   @author  MCD Application Team                                          --
---   @version V1.3.1                                                        --
---   @date    25-March-2015                                                 --
---   @brief   Header file of DAC HAL module.                                --
---                                                                          --
---   COPYRIGHT(c) 2014 STMicroelectronics                                   --
 ------------------------------------------------------------------------------
 
---  This file provides interfaces for the digital-to-analog converters on the
+--  This file provides interfaces for the CAN controllers on the
 --  STM32F4 (ARM Cortex M4F) microcontrollers from ST Microelectronics.
 
+with System;
 private with STM32_SVD.CAN;
 
 package STM32.CAN is
@@ -65,35 +57,126 @@ package STM32.CAN is
       Length      : Uint4;
    end record;
 
+   type Filter_Mode is (Mask_Mode, List_Mode);
+
+   type Filter_Scale is (Single_Scale, Dual_Scale);
+
+   type RX_Fifo is (RX_Fifo_0, RX_Fifo_1);
+
+   type TX_Mailbox is (TX_Mailbox_0, TX_Mailbox_1, TX_Mailbox_2);
+
+   type Long_Filter is record
+      --  unspecified
+      Reserved_0 : Boolean := False;
+      --  RTR
+      RTR        : Boolean := False;
+      --  IDE
+      IDE        : Boolean := False;
+      --  EXID
+      EXID       : HAL.UInt18 := 16#0#;
+      --  STID
+      STID       : HAL.UInt11 := 16#0#;
+   end record
+     with Size => 32, Bit_Order => System.Low_Order_First; 
+
+   for Long_Filter use record
+      Reserved_0 at 0 range 0 .. 0;
+      RTR        at 0 range 1 .. 1;
+      IDE        at 0 range 2 .. 2;
+      EXID       at 0 range 3 .. 20;
+      STID       at 0 range 21 .. 31;
+   end record;
+   
+   type Short_Filter is record
+      --  EXID
+      EXID       : HAL.UInt3 := 16#0#;
+      --  RTR
+      RTR        : Boolean := False;
+      --  IDE
+      IDE        : Boolean := False;
+      --  STID
+      STID       : HAL.UInt11 := 16#0#;
+   end record
+     with Size => 16, Bit_Order => System.Low_Order_First; 
+
+   for Short_Filter use record
+      EXID       at 0 range 0 .. 2;
+      RTR        at 0 range 3 .. 3;
+      IDE        at 0 range 4 .. 4;
+      STID       at 0 range 5 .. 15;
+   end record;
+
    ---------------
    -- Configure --
    ---------------
 
    procedure Configure (This : in out CAN_Controller; Rate : Bit_Rate; Mode : Retransmission_Mode);
 
+   -------------------
+   -- Enable_Filter --
+   -------------------
+
+   procedure Enable_Filter (This : in out CAN_Controller; Filter : in Integer);
+
+   --------------------
+   -- Disable_Filter --
+   --------------------
+
+   procedure Disable_Filter (This : in out CAN_Controller; Filter : in Integer);
+
+   -------------------------
+   -- Disable_All_Filters --
+   -------------------------
+
+   procedure Disable_All_Filters (This : in out CAN_Controller);
+
    ----------------------
    -- Configure_Filter --
    ----------------------
 
-   procedure Configure_Filter (This : CAN_Controller);
+   procedure Configure_Filter (This   : in out CAN_Controller;
+                               Filter : in Integer;
+                               Fifo   : in RX_Fifo;
+                               Mode   : in Filter_Mode;
+                               Scale  : in Filter_Scale;
+                               W1     : in UInt32;
+                               W2     : in UInt32);
+
+   procedure Configure_Filter (This   : in out CAN_Controller;
+                               Filter : in Integer;
+                               Fifo   : in RX_Fifo;
+                               Mode   : in Filter_Mode;
+                               F1     : in Long_Filter;
+                               F2     : in Long_Filter) with Inline;
+
+   procedure Configure_Filter (This   : in out CAN_Controller;
+                               Filter : in Integer;
+                               Fifo   : in RX_Fifo;
+                               Mode   : in Filter_Mode;
+                               F1     : in Short_Filter;
+                               F2     : in Short_Filter;
+                               F3     : in Short_Filter;
+                               F4     : in Short_Filter) with Inline;
 
    ----------
    -- Send --
    ----------
 
-   procedure Send (This : in out CAN_Controller; Msg : in Message);
+   procedure Send (This : in out CAN_Controller; Msg : in Message; Mailbox : in TX_Mailbox);
 
    -------------
    -- Receive --
    -------------
 
-   procedure Receive (This : in out CAN_Controller; Msg : out Message);
+   procedure Receive (This : in out CAN_Controller; Msg : out Message; Fifo : in RX_Fifo);
 
    -----------------------
    -- Message_Available --
    -----------------------
 
    function Message_Available (This : CAN_Controller) return Boolean;
+
+   function Message_Available (This : CAN_Controller; Fifo : RX_Fifo) return Boolean;
 
    ----------------------------
    -- In_Initialization_Mode --
@@ -158,5 +241,9 @@ package STM32.CAN is
 private
 
    type CAN_Controller is new STM32_SVD.CAN.CAN_Peripheral;
+
+   type CAN_Filters is array ( 0 .. 55 ) of UInt32;
+
+   CAN12_Filters : aliased CAN_Filters with Import, Volatile, Address => STM32_SVD.CAN.CAN1_Periph.F0R1'Address;
 
 end STM32.CAN;
