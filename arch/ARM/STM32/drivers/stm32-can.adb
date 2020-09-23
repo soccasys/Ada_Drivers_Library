@@ -1,6 +1,6 @@
 ------------------------------------------------------------------------------
 --                                                                          --
---                    Copyright (C) 2015, AdaCore                           --
+--                    Copyright (C) 2020, AdaCore and other contributors    --
 --                                                                          --
 --  Redistribution and use in source and binary forms, with or without      --
 --  modification, are permitted provided that the following conditions are  --
@@ -482,5 +482,178 @@ package body STM32.CAN is
    begin
       This.FMR.FINIT := False;
    end Disable_Filter_Configuration;
+
+   procedure Enable_Interrupts
+     (This   : in out CAN_Controller;
+      Source : CAN_Interrupt) is
+   begin
+      case Source is
+         when Transmit_Mailbox_Empty =>
+            This.IER.TMEIE := True;
+         when Fifo0_Message_Pending =>
+            This.IER.FMPIE0 := True;
+         when Fifo0_Full =>
+            This.IER.FFIE0 := True;
+         when Fifo0_Overrun =>
+            This.IER.FOVIE0 := True;
+         when Fifo1_Message_Pending =>
+            This.IER.FMPIE1 := True;
+         when Fifo1_Full =>
+            This.IER.FFIE1 := True;
+         when Fifo1_Overrun =>
+            This.IER.FOVIE1 := True;
+         when Error_Warning =>
+            This.IER.EWGIE := True;
+         when Error_Passive =>
+            This.IER.EPVIE := True;
+         when Bus_Off =>
+            This.IER.BOFIE := True;
+         when Last_Error_Code =>
+            This.IER.LECIE := True;
+         when Error =>
+            This.IER.ERRIE := True;
+         when Wakeup =>
+            This.IER.WKUIE := True;
+         when Sleep =>
+            This.IER.SLKIE := True;
+      end case;
+   end Enable_Interrupts;
+
+   procedure Disable_Interrupts
+     (This   : in out CAN_Controller;
+      Source : CAN_Interrupt) is
+   begin
+      case Source is
+         when Transmit_Mailbox_Empty =>
+            This.IER.TMEIE := False;
+         when Fifo0_Message_Pending =>
+            This.IER.FMPIE0 := False;
+         when Fifo0_Full =>
+            This.IER.FFIE0 := False;
+         when Fifo0_Overrun =>
+            This.IER.FOVIE0 := False;
+         when Fifo1_Message_Pending =>
+            This.IER.FMPIE1 := False;
+         when Fifo1_Full =>
+            This.IER.FFIE1 := False;
+         when Fifo1_Overrun =>
+            This.IER.FOVIE1 := False;
+         when Error_Warning =>
+            This.IER.EWGIE := False;
+         when Error_Passive =>
+            This.IER.EPVIE := False;
+         when Bus_Off =>
+            This.IER.BOFIE := False;
+         when Last_Error_Code =>
+            This.IER.LECIE := False;
+         when Error =>
+            This.IER.ERRIE := False;
+         when Wakeup =>
+            This.IER.WKUIE := False;
+         when Sleep =>
+            This.IER.SLKIE := False;
+      end case;
+   end Disable_Interrupts;
+
+   function Interrupt_Enabled
+     (This   : CAN_Controller;
+      Source : CAN_Interrupt)
+      return Boolean is
+   begin
+      case Source is
+         when Transmit_Mailbox_Empty =>
+            return This.IER.TMEIE;
+         when Fifo0_Message_Pending =>
+            return This.IER.FMPIE0;
+         when Fifo0_Full =>
+            return This.IER.FFIE0;
+         when Fifo0_Overrun =>
+            return This.IER.FOVIE0;
+         when Fifo1_Message_Pending =>
+            return This.IER.FMPIE1;
+         when Fifo1_Full =>
+            return This.IER.FFIE1;
+         when Fifo1_Overrun =>
+            return This.IER.FOVIE1;
+         when Error_Warning =>
+            return This.IER.EWGIE;
+         when Error_Passive =>
+            return This.IER.EPVIE;
+         when Bus_Off =>
+            return This.IER.BOFIE;
+         when Last_Error_Code =>
+            return This.IER.LECIE;
+         when Error =>
+            return This.IER.ERRIE;
+         when Wakeup =>
+            return This.IER.WKUIE;
+         when Sleep =>
+            return This.IER.SLKIE;
+      end case;
+   end Interrupt_Enabled;
+
+   function To_UInt3 is new Ada.Unchecked_Conversion(Error_Code, UInt3);
+
+   function To_Error_Code is new Ada.Unchecked_Conversion(UInt3, Error_Code);
+
+   function Status (This : CAN_Controller; Flag : CAN_Status_Flag)
+     return Boolean is
+   begin
+      case Flag is
+         when Transmit_Mailbox_Empty_Indicated =>
+            return (This.TSR.TME.Arr(0) or This.TSR.TME.Arr(1) or This.TSR.TME.Arr(2));
+         when Fifo0_Message_Pending_Indicated =>
+            return (This.RF0R.FMP0 > 0);
+         when Fifo0_Full_Indicated =>
+            return This.RF0R.FULL0;
+         when Fifo0_Overrun_Indicated =>
+            return This.RF0R.FOVR0;
+         when Fifo1_Message_Pending_Indicated =>
+            return (This.RF1R.FMP1 > 0);
+         when Fifo1_Full_Indicated =>
+            return This.RF1R.FULL1;
+         when Fifo1_Overrun_Indicated =>
+            return This.RF1R.FOVR1;
+         when Error_Warning_Indicated =>
+            return This.ESR.EWGF;
+         when Error_Passive_Indicated =>
+            return This.ESR.EPVF;
+         when Bus_Off_Indicated =>
+            return This.ESR.BOFF;
+         when Last_Error_Code_Indicated =>
+            return (This.ESR.LEC /= To_UInt3(No_Error) and This.ESR.LEC /= To_UInt3(Set_By_Software));
+         when Error_Indicated =>
+            return (This.MSR.ERRI);
+         when Wakeup_Indicated =>
+            return (This.MSR.WKUI);
+         when Sleep_Indicated =>
+            return (This.MSR.SLAKI);
+      end case;
+   end Status;
+
+   procedure Clear_Status (This : in out CAN_Controller; Flag : CAN_Status_Flag) is
+   begin
+      case Flag is
+         when Last_Error_Code_Indicated =>
+            This.ESR.LEC := To_Uint3(Set_By_Software);
+         when Error_Indicated =>
+            This.MSR.ERRI := False;
+         when Wakeup_Indicated =>
+            This.MSR.WKUI := False;
+         when Sleep_Indicated =>
+            This.MSR.SLAKI := False;
+         when others =>
+            null;
+      end case;
+   end Clear_Status;
+
+   function Last_Error_Code (This : CAN_Controller)
+     return Error_Code is (To_Error_Code(This.ESR.LEC));
+
+   function Receive_Error_Counter (This : CAN_Controller)
+     return UInt8 is (This.ESR.REC);
+
+   function Transmit_Error_Counter (This : CAN_Controller)
+     return UInt8 is (This.ESR.TEC);
 
 end STM32.CAN;
