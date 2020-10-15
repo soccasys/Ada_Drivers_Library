@@ -301,6 +301,10 @@ package body STM32.Device is
       if This'Address = STM32_SVD.CAN1_Base then
          RCC_Periph.APB1ENR.CAN1EN := True;
       elsif This'Address = STM32_SVD.CAN2_Base then
+         -- CAN2 requires CAN1 to be enabled to work properly
+         if not RCC_Periph.APB1ENR.CAN1EN then
+            RCC_Periph.APB1ENR.CAN1EN := True;
+         end if;
          RCC_Periph.APB1ENR.CAN2EN := True;
       else
          raise Unknown_Device;

@@ -31,7 +31,6 @@
 ------------------------------------------------------------------------------
 
 with Ada.Unchecked_Conversion;
-
 with System;        use System;
 with STM32_SVD.CAN; use STM32_SVD.CAN;
 
@@ -49,32 +48,36 @@ package body STM32.CAN is
       else
          This.MCR.NART := True;
       end if;
+      -- Enable automatic bus-off management and wake-up
+      This.MCR.ABOM := True;
+      This.MCR.AWUM := True;
+      -- Values below are for a STM32F407
       This.BTR.SJW := 0;
       case Rate is
          when Rate_50KBPS =>
             This.BTR.TS2 := 2 - 1;
             This.BTR.TS1 := 12 - 1;
-            This.BTR.BRP := 60 - 1;
+            This.BTR.BRP := 56 - 1;
          when Rate_100KBPS =>
             This.BTR.TS2 := 2 - 1;
             This.BTR.TS1 := 12 - 1;
-            This.BTR.BRP := 30 - 1;
+            This.BTR.BRP := 28 - 1;
          when Rate_125KBPS =>
             This.BTR.TS2 := 2 - 1;
-            This.BTR.TS1 := 12 - 1;
-            This.BTR.BRP := 24 - 1;
+            This.BTR.TS1 := 13 - 1;
+            This.BTR.BRP := 21 - 1;
          when Rate_250KBPS =>
             This.BTR.TS2 := 2 - 1;
-            This.BTR.TS1 := 12 - 1;
+            This.BTR.TS1 := 11 - 1;
             This.BTR.BRP := 12 - 1;
          when Rate_500KBPS =>
             This.BTR.TS2 := 2 - 1;
-            This.BTR.TS1 := 12 - 1;
+            This.BTR.TS1 := 11 - 1;
             This.BTR.BRP := 6 - 1;
          when Rate_1000KBPS =>
-            This.BTR.TS2 := 2 - 1;
-            This.BTR.TS1 := 7 - 1;
-            This.BTR.BRP := 5 - 1;
+            This.BTR.TS2 := 1 - 1;
+            This.BTR.TS1 := 5 - 1;
+            This.BTR.BRP := 6 - 1;
       end case;
 
       -- Initialize the CAN filter banks and allocate 14 filters to both
@@ -241,6 +244,7 @@ package body STM32.CAN is
                This.TI0R.EXID := Msg.Extended_Id;
             else
                This.TI0R.IDE := False; 
+               This.TI0R.EXID := 0;
             end if;
             if Msg.Remote then
                This.TI0R.RTR := True;
@@ -268,6 +272,7 @@ package body STM32.CAN is
                This.TI1R.EXID := Msg.Extended_Id;
             else
                This.TI1R.IDE := False; 
+               This.TI1R.EXID := 0;
             end if;
             if Msg.Remote then
                This.TI1R.RTR := True;
@@ -294,6 +299,7 @@ package body STM32.CAN is
                This.TI2R.EXID := Msg.Extended_Id;
             else
                This.TI2R.IDE := False; 
+               This.TI2R.EXID := 0;
             end if;
             if Msg.Remote then
                This.TI2R.RTR := True;
@@ -378,7 +384,7 @@ package body STM32.CAN is
    ----------------------------
                                                                                 
    function In_Initialization_Mode (This : CAN_Controller) return Boolean is
-      (This.MSR.INAK);
+      (This.MSR.INAK and not This.MSR.SLAK);
 
    --------------------
    -- In_Normal_Mode --
@@ -392,7 +398,7 @@ package body STM32.CAN is
    -------------------
                                                                                 
    function In_Sleep_Mode (This : CAN_Controller) return Boolean is
-      (This.MSR.SLAK);
+      (not This.MSR.INAK and This.MSR.SLAK);
 
    -------------------------------
    -- Enter_Initialization_Mode --
@@ -418,7 +424,7 @@ package body STM32.CAN is
       This.MCR.INRQ := False;
       -- FIXME There should be timeout here, and some form of error reporting
       -- in case the CAN bus is not ok
-      while not In_Normal_Mode(This) loop
+      while not In_Normal_Mode(This) and not In_Sleep_Mode(This) loop
          null;
       end loop;
    end Enter_Normal_Mode;

@@ -57,10 +57,10 @@ package STM32.CAN is
    type Message is record
       Standard_Id : Uint11;
       Extended_Id : Uint18;
-      Extended    : Boolean;
-      Remote      : Boolean;
+      Extended    : Boolean := False;
+      Remote      : Boolean := False;
       Data        : Payload;
-      Length      : Uint4;
+      Length      : Uint4 := 8;
    end record;
 
    type Filter_Mode is (Mask_Mode, List_Mode);
