@@ -321,6 +321,22 @@ package body STM32.CAN is
       end case;
    end Send;
 
+   function Mailbox_Empty (This : CAN_Controller) return Boolean is
+      (not This.TI0R.TXRQ or not This.TI1R.TXRQ or not This.TI2R.TXRQ);
+
+   function Mailbox_Empty (This : CAN_Controller;
+                           Mailbox : in TX_Mailbox) return Boolean is
+   begin
+      case Mailbox is
+         when TX_Mailbox_0 =>
+            return not This.TI0R.TXRQ;
+         when TX_Mailbox_1 =>
+            return not This.TI1R.TXRQ;
+         when TX_Mailbox_2 =>
+            return not This.TI2R.TXRQ;
+      end case;
+   end Mailbox_Empty;
+
    -------------
    -- Receive --
    -------------

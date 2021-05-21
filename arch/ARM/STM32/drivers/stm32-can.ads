@@ -170,6 +170,15 @@ package STM32.CAN is
 
    procedure Send (This : in out CAN_Controller; Msg : in Message; Mailbox : in TX_Mailbox);
 
+   -------------------
+   -- Mailbox_Empty --
+   -------------------
+
+   function Mailbox_Empty (This : CAN_Controller) return Boolean;
+
+   function Mailbox_Empty (This : CAN_Controller;
+                           Mailbox : in TX_Mailbox) return Boolean;
+
    -------------
    -- Receive --
    -------------
